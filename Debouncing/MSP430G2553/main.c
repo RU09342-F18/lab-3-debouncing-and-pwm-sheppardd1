@@ -67,7 +67,11 @@
 //******************************************************************************
 
 
-//Debouncing
+//Debouncing MSP430G2553
+//Created: 1 October 2018
+//By: David Sheppard
+//Last Updated: 5 October 2018
+//Updates: It actually works now
 
 #include <msp430G2553.h>
 
@@ -78,22 +82,26 @@
 void main(void)
 
 /*
- * Goal: When button pressed, start timer and disenable interrupts
- * When timer rolls over, reenable interrupts so we can check button
+ * Concept: Button is debounced by disenabling interrupts from the button for a very short time period
+ * Implementation: When button pressed, start timer and disenable interrupts.
+ * When timer rolls over, reenable interrupts so we can check button again.
+ * LED0 starts out off and LED1 starts out on. They toggle when button is pressed and released
+ * LED0: off when button not pressed, on when pressed. LED1 is opposite.
  * */
 
-
 {
-  rate = 50000; //default
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-  P1DIR |= 0x01;                            // P1.0 output
+  BCSCTL3 = LFXT1S_2;                       //interfaces with crystal (needed for clock to work)
+  P1DIR |= (LED0 + LED1);                   // Set LEDs to be outputs
+  P1OUT &= ~(LED0 + LED1);                  // shut off LED
   CCTL0 = CCIE;                             // CCR0 interrupt enabled
-  CCR0 = 10000;                            //set capture compare register
-
+  CCR0 = 3277;                              //set capture compare register to about 1/10 of aclk, so button interrupt is disabled for 0.1 s
   P1IFG &= ~BUTTON;                         // clear the P1.3 interrupt flag
+  P1IE |= BUTTON;                           //enable interrupts from the button
 
-  __bis_SR_register(LPM0_bits + GIE);       // Enter LPM0 w/ interrupt
-  __enable_interrupt();       // enable interrupts
+  P1OUT ^= LED1;                            //I want LED1 and LED0 to always be on at different times, so I'll toggle LED1 now
+
+  __bis_SR_register(LPM0_bits + GIE);       // Enter low power mode w/ interrupt
 
 }
 
@@ -102,9 +110,9 @@ void main(void)
 __interrupt void Timer_A (void)
 {
 
-    P1IE |= BUTTON;       //reenable port 1 interrupts, so button can be read again
-    TACTL = MC_0;       //stop timer
+    TACTL = MC_0;           //stop timer
     TA0R = 0;               //reset timer reg contents
+    P1IE |= BUTTON;         //reenable port 1 interrupts, so button can be read again
 
 }
 // ACLK is 32768 Hz
@@ -112,20 +120,18 @@ __interrupt void Timer_A (void)
 
 // Port 1 interrupt service routine (for button)
 #pragma vector=PORT1_VECTOR
-__interrupt void Port_1(void)   //take care of interrupt coming from port 1
+__interrupt void Port_1(void)       //take care of interrupt coming from port 1
 {
+    P1IES ^= BUTTON;                // toggle the interrupt edge,
+    P1OUT ^= (LED0 + LED1);                  //toggle LED
 
-P1IFG &= ~BUTTON;               // clear the P1.3 interrupt flag
-P1IES ^= BUTTON;                // toggle the interrupt edge,
-P1OUT ^= LED0;      //toggle LED
-
-TACTL = TASSEL_1 + MC_1 + ID_0;           // ACLK, up mode, input divider = 0
-P1IE &= BUTTON;      //disable port 1 interrupts (button won't cause interrupt)
-
+    TACTL = TASSEL_1 + MC_1 + ID_0;     // ACLK, up mode, input divider = 0
+    P1IE &= BUTTON;                     //disable port 1 interrupts (button won't cause interrupt)
+    P1IFG &= ~BUTTON;                   // clear the P1.3 interrupt flag
 }
 
-// the interrupt vector will be called
-// when P1.3 goes from HitoLow as well as
+// Note: the interrupt vector will be called
+// when P1.3 goes from Hi to Low as well as
 // LowtoHigh
 
 
