@@ -123,7 +123,7 @@ __interrupt void Timer_A (void)
 __interrupt void Port_1(void)       //take care of interrupt coming from port 1
 {
     P1IES ^= BUTTON;                // toggle the interrupt edge,
-    P1OUT ^= (LED0 + LED1);                  //toggle LED
+    P1OUT ^= (LED0 + LED1           //toggle LEDs
 
     TACTL = TASSEL_1 + MC_1 + ID_0;     // ACLK, up mode, input divider = 0
     P1IE &= BUTTON;                     //disable port 1 interrupts (button won't cause interrupt)
