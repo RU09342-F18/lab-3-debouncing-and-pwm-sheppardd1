@@ -95,7 +95,7 @@ void main(void)
   P1DIR |= (LED0 + LED1);                   // Set LEDs to be outputs
   P1OUT &= ~(LED0 + LED1);                  // shut off LED
   CCTL0 = CCIE;                             // CCR0 interrupt enabled
-  CCR0 = 3277;                              //set capture compare register to about 1/10 of aclk, so button interrupt is disabled for 0.1 s
+  CCR0 = 3277;                              //set capture compare register to about 1/10 of aclk, so button interrupt (positive or negative edge) is disabled for 0.1 s
   P1IFG &= ~BUTTON;                         // clear the P1.3 interrupt flag
   P1IE |= BUTTON;                           //enable interrupts from the button
 
