@@ -75,10 +75,6 @@
 #define LED1 BIT6   //defining LED1 as BIT6
 #define BUTTON BIT3 //defining BUTTON as BIT3
 
-int Hz_to_timer(int);
-
-long rate;
-
 void main(void)
 
 /*
