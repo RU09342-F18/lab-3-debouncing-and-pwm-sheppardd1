@@ -95,7 +95,7 @@ void main(void)
   P1DIR |= (LED0 + LED1);                   // Set LEDs to be outputs
   P1OUT &= ~(LED0 + LED1);                  // shut off LED
   CCTL0 = CCIE;                             // CCR0 interrupt enabled
-  CCR0 = 3277;                              //set capture compare register to about 1/10 of aclk, so button interrupt (positive or negative edge) is disabled for 0.1 s
+  CCR0 = 3277;                              //set capture compare register to about 1/10 of aclk, so button interrupt is disabled for 0.1 s
   P1IFG &= ~BUTTON;                         // clear the P1.3 interrupt flag
   P1IE |= BUTTON;                           //enable interrupts from the button
 
@@ -123,7 +123,7 @@ __interrupt void Timer_A (void)
 __interrupt void Port_1(void)       //take care of interrupt coming from port 1
 {
     P1IES ^= BUTTON;                // toggle the interrupt edge,
-    P1OUT ^= (LED0 + LED1           //toggle LEDs
+    P1OUT ^= (LED0 + LED1);                  //toggle LEDs
 
     TACTL = TASSEL_1 + MC_1 + ID_0;     // ACLK, up mode, input divider = 0
     P1IE &= BUTTON;                     //disable port 1 interrupts (button won't cause interrupt)
