@@ -80,8 +80,6 @@
 #define BUTTON BIT3 //defining BUTTON as BIT3
 
 //function prototypes
-void TimerA0Setup();
-void TimerA1Setup();
 unsigned int Hz_to_timer(unsigned int, int);
 
 
