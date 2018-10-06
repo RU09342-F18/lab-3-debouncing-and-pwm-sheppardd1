@@ -65,100 +65,6 @@
 //  December 2010
 //   Built with CCS Version 4.2.0 and IAR Embedded Workbench Version: 5.10
 //******************************************************************************
-/*
-
-//Hardware PWM MSP430G2553
-//Created: 5 October 2018
-//By: David Sheppard
-
-#include <msp430G2553.h>
-
-#define LED0 BIT0   //defining LED0 as BIT0
-#define LED1 BIT6   //defining LED1 as BIT6
-#define BUTTON BIT3 //defining BUTTON as BIT3
-
-void main(void)
-
-/*
- * Concept: Button is debounced by disenabling interrupts from the button for a very short time period
- * Implementation: When button pressed, start timer and disenable interrupts.
- * When timer rolls over, reenable interrupts so we can check button again.
- * LED0 starts out off and LED1 starts out on. They toggle when button is pressed and released
- * LED0: off when button not pressed, on when pressed. LED1 is opposite.
- * */
-/*
-{
-  WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-  BCSCTL3 = LFXT1S_2;                       //interfaces with crystal (needed for clock to work)
-  P1DIR |= (LED0 + LED1);                   // Set LEDs to be outputs
-  P1OUT &= ~(LED0 + LED1);                  // shut off LED
-  CCTL0 = CCIE;                             // CCR0 interrupt enabled
-  CCR0 = 3277;                              //set capture compare register to about 1/10 of aclk, so button interrupt is disabled for 0.1 s
-  P1IFG &= ~BUTTON;                         // clear the P1.3 interrupt flag
-  P1IE |= BUTTON;                           //enable interrupts from the button
-  TA1CCR0 = 50000;
-  TA1CCR1 = 40000;
-  TA1CTL = TASSEL_2 + MC_2 + ID_3 + TAIE;
-  TA0CCTL1 = OUTMOD_7;
-  P1OUT ^= LED1;                            //I want LED1 and LED0 to always be on at different times, so I'll toggle LED1 now
-
-  __bis_SR_register(LPM0_bits + GIE);       // Enter low power mode w/ interrupt
-
-}
-
-// Timer A0 interrupt service routine
-#pragma vector=TIMER0_A0_VECTOR
-__interrupt void Timer_A (void)
-{
-
-    TACTL = MC_0;           //stop timer
-    TA0R = 0;               //reset timer reg contents
-    P1IE |= BUTTON;         //reenable port 1 interrupts, so button can be read again
-
-}
-
-
-#pragma vector=TIMER1_A0_VECTOR
-__interrupt void Timer1_A (void)
-{
-
-    int Timer0Int = TA1IV;  // since we were having issues with the switch statement
-    switch(Timer0Int)       // Based on the intterupt source
-    {
-    case 2:                 // If CCR1 is triggered, we need to turn LED output to zero for the rest of the cycle
-    {
-        P1OUT &= ~BIT0;     // Turn LED off
-        TA1IV &= ~TA1IV_TACCR1; // Clear the Timer0 interrupt Flag
-    }
-    break;
-    case 10:                // Timer has overflowed, meaning we need to reset our cycle
-    {
-        P1OUT |= BIT0;      // Turn LED on
-        TA1IV &= ~TA1IV_TAIFG; // Clear the Timer0 interrupt Flag
-    }
-    break;
-    }
-
-}
-
-
-// Port 1 interrupt service routine (for button)
-#pragma vector=PORT1_VECTOR
-__interrupt void Port_1(void)       //take care of interrupt coming from port 1
-{
-    P1IES ^= BUTTON;                // toggle the interrupt edge,
-    P1OUT ^= (LED1);                  //toggle LEDs
-
-    TACTL = TASSEL_1 + MC_1 + ID_0;     // ACLK, up mode, input divider = 0
-    P1IE &= BUTTON;                     //disable port 1 interrupts (button won't cause interrupt)
-    P1IFG &= ~BUTTON;                   // clear the P1.3 interrupt flag
-}
-
-// Note: the interrupt vector will be called
-// when P1.3 goes from Hi to Low as well as
-// LowtoHigh
-
-*/
 
 
 //Hardware PWM MSP430G2553
@@ -172,17 +78,23 @@ __interrupt void Port_1(void)       //take care of interrupt coming from port 1
 #define LED1 BIT6   //defining LED1 as BIT6
 #define BUTTON BIT3 //defining BUTTON as BIT3
 
+unsigned int DC = 50; //duty cycle
+
 int main(void) {
+
     WDTCTL = WDTPW + WDTHOLD; //Disable the Watchdog timer for our convenience.
     P1SEL |= LED0; //Select pin LED as our PWM output.
     P1DIR |= (LED0 + LED1);                   // Set LEDs to be outputs
     P1OUT &= ~(LED0 + LED1);                  // shut off LEDs
     P1IFG &= ~BUTTON;                         // clear the P1.3 interrupt flag
     P1IE |= BUTTON;                           //enable interrupts from the button
-    TA0CCR0 = 1000; //Set the period in the Timer A0 Capture/Compare 0 register to 1000 us.
-    TA0CCTL1 = OUTMOD_7;
-    TA0CCR1 = 999; //The period in microseconds that the power is ON. It's half the time, which translates to a 50% duty cycle.
-    TA0CTL = TASSEL_2 + MC_1 + ID_2; //TASSEL_2 selects SMCLK as the clock source, and MC_1 tells it to count up to the value in TA0CCR0.
+    BCSCTL3 = LFXT1S_2;                     //interfaces with crystal (needed for clock to work)
+    TA0CCTL0 = CCIE;                        // CCR0 interrupt enabled for TA0
+    TA1CCTL1 = CCIE;
+    TA1CCR0 = 262; //Set the period in the Timer A Capture/Compare 0 register to 1000 us.
+    TA1CCTL1 = OUTMOD_7;
+    TA1CCR1 = 131; //The period in microseconds that the power is ON. It's half the time, which translates to a 50% duty cycle.
+    TA0CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TASSEL_2 selects SMCLK as the clock source, and MC_1 tells it to count up to the value in TA0CCR0.
     __bis_SR_register(LPM0_bits); //Switch to low power mode 0.
 }
 
@@ -194,29 +106,6 @@ __interrupt void Timer_A(void)
     TA0R = 0;               //reset timer reg contents
     P1IE |= BUTTON;         //reenable port 1 interrupts, so button can be read again
 }
-
-//special thanks to Russell Trafford for much of this interrupt:
-#pragma vector=TIMER1_A1_VECTOR // This drives the PWM
-__interrupt void Timer1_A(void)
-{
-    int Timer0Int = TA1IV;  // since we were having issues with the switch statement
-    switch(Timer0Int)       // Based on the interrupt source
-    {
-    case 2:                 // If CCR1 is triggered, we need to turn LED output to zero for the rest of the cycle
-    {
-        P1OUT &= ~BIT0;     // Turn LED off
-        TA1IV &= ~TA1IV_TACCR1; // Clear the Timer0 interrupt Flag
-    }
-    break;
-    case 10:                // Timer has overflowed, meaning we need to reset our cycle
-    {
-        P1OUT |= BIT0;      // Turn LED on
-        TA1IV &= ~TA1IV_TAIFG; // Clear the Timer0 interrupt Flag
-    }
-    break;
-    }
-}
-
 
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void)   //take care of interrupt coming from port 1
