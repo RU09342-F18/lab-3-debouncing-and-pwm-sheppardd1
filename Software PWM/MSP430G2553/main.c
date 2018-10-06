@@ -67,7 +67,10 @@
 //******************************************************************************
 
 
-//Software PWM
+//Software PWM MSP430G2553
+//Created: 5 October 2018
+//By: David Sheppard
+//Purpose: Increases brightness of LED using PWM
 
 #include <msp430G2553.h>
 
@@ -87,6 +90,8 @@ unsigned int onTime = 1000;
 unsigned int offTime = 1000;
 unsigned int time = 1000;
 
+unsigned int DC = 50;
+
 void main(void)
 
 {
@@ -104,8 +109,8 @@ void main(void)
     TA0CCTL0 = CCIE;                        // CCR0 interrupt enabled for TA0
     TA1CCTL1 = CCIE;                        // CCR1 interrupt enabled for TA1
     TA0CCR0 = 13107;                        //set value for debouncing timer
-    TA1CCR0 = 262;                        //time that counter rolls over
-    TA1CCR1 = 131;                        //time that LED inverts at (starting off with 50
+    TA1CCR0 = 262;         //time that counter rolls over (gives us period of 1000 Hz
+    TA1CCR1 = 131;                          //time that LED inverts at (starting off with 50% duty cycle)
     TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     P1DIR |= (LED0 + LED1);                   // Set LEDs to be outputs
     P1OUT &= ~(LED0 + LED1);                  // shut off LEDs
@@ -128,6 +133,7 @@ __interrupt void Timer_A(void)
     P1IE |= BUTTON;         //reenable port 1 interrupts, so button can be read again
 }
 
+//special thanks to Russell Trafford for much of this interrupt:
 #pragma vector=TIMER1_A1_VECTOR // This drives the PWM
 __interrupt void Timer1_A(void)
 {
@@ -160,6 +166,92 @@ __interrupt void Port_1(void)   //take care of interrupt coming from port 1
     TA0CTL = TASSEL_2 + MC_1 + ID_3 + TAIE;     // SMCLK, up mode, input divider = 8
     P1IE &= BUTTON;                     //disable port 1 interrupts (button won't cause interrupt)
 
+    switch(DC) //determines the brightness of the LED based on the PWN duty cycle
+    //the Hz_to_time() function was acting weird, so I'm stuck with this switch statement layout
+    {
+    case 0:
+    {
+        TACTL = TACLR;
+        TA1CCR1 = 0;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 10:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 20:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 30:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 40:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 50:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 60:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 70:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;;
+    case 80:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 90:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    case 100:
+    {
+        TACTL = TACLR;
+        TA1CCR1 += 26;
+        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+    }
+        break;
+    }
+
+    if(DC != 100)
+        DC += 10;
+    else
+        DC = 0;
 
 }
 
