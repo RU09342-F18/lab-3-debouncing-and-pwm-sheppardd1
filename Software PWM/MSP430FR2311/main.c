@@ -99,8 +99,7 @@ void main(void)
      * The values of CCRs for TimeA1 are changed every time button is pressed in order to change duty cycle
      */
 
-
-    //want 1kHz signal
+    //want 1kHz signal overall
 
     PM5CTL0 &= ~LOCKLPM5;           //NEEDED FOR ALL FR BOARDS - takes out of low power mode and ensures correct programming
     WDTCTL = WDTPW + WDTHOLD;               // Stop WDT
