@@ -256,21 +256,6 @@ __interrupt void Port_1(void)   //take care of interrupt coming from port 1
 
 
 /***************************Functions*******************************************/
-/*
-void TimerA0Setup(){
-    TA0CTL = CCIE;                              // CCR0 interrupt enabled
-    TA0CCR0 = 13107;                            //set capture compare register to about 1/10 of SMCLK, so button interrupt is disabled for 0.1 s
-    //Don't want to start timer until button is pressed
-    //TA0CTL = TASSEL_2 + MC_1 + ID_3;          // SMCLK, up mode, input divider = 0
-}
-
-
-void TimerA1Setup(){
-    TA1CTL = CCIE;                          // CCR0 interrupt enabled
-    TA1CCR0 = Hz_to_timer(500, 0);          //set capture compare register (input of function needs to be desired frequency / 2 since LED toggles each time CCR is reached)
-    TA1CTL = TASSEL_2 + MC_1 + ID_0;        // SMCLK, up mode, input divider = 0
-}
-*/
 
 unsigned int Hz_to_timer(unsigned int Hz, int ID)
 {//ID is divider
