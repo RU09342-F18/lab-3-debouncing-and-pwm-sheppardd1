@@ -72,6 +72,8 @@
 //By: David Sheppard
 // based on: https://www.kompulsa.com/example-code-msp430-pwm/
 
+//don't need interrupts from timers to get PWM signal, just using timer interrupt for debouncing
+
 #include <msp430G2553.h>
 
 #define LED0 BIT0   //defining LED0 as BIT0
@@ -83,23 +85,29 @@ unsigned int DC = 50; //duty cycle
 int main(void) {
 
     WDTCTL = WDTPW + WDTHOLD; //Disable the Watchdog timer for our convenience.
+    P2DIR |= BIT1 + BIT3 + BIT5;
+    P2SEL2 &= ~(BIT1 + BIT3 + BIT5);
+    P2SEL |= BIT1 + BIT3 + BIT5;
     P1SEL |= LED0; //Select pin LED as our PWM output.
     P1DIR |= (LED0 + LED1);                   // Set LEDs to be outputs
     P1OUT &= ~(LED0 + LED1);                  // shut off LEDs
     P1IFG &= ~BUTTON;                         // clear the P1.3 interrupt flag
     P1IE |= BUTTON;                           //enable interrupts from the button
     BCSCTL3 = LFXT1S_2;                     //interfaces with crystal (needed for clock to work)
-    TA0CCTL0 = CCIE;                        // CCR0 interrupt enabled for TA0
-    TA1CCTL1 = CCIE;
+
     TA1CCR0 = 262; //Set the period in the Timer A Capture/Compare 0 register to 1000 us.
-    TA1CCTL1 = OUTMOD_7;
+    TA1CCTL1 = OUTMOD_7;    //set-reset mode: see family user guide pg 357
     TA1CCR1 = 131; //The period in microseconds that the power is ON. It's half the time, which translates to a 50% duty cycle.
+    TA1CTL = TASSEL_2 + MC_1 + ID_2; //TASSEL_2 selects SMCLK as the clock source, and MC_1 tells it to count up to the value in TA0CCR0.
     TA0CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TASSEL_2 selects SMCLK as the clock source, and MC_1 tells it to count up to the value in TA0CCR0.
-    __bis_SR_register(LPM0_bits); //Switch to low power mode 0.
+    __bis_SR_register(LPM0_bits+GIE); //Switch to low power mode 0.
+    __no_operation();
+
+
 }
 
 // Timer A0 interrupt service routine - used for debouncing
-#pragma vector=TIMER0_A0_VECTOR
+#pragma vector=TIMER0_A1_VECTOR
 __interrupt void Timer_A(void)
 {
     TA0CTL = MC_0;           //stop timer
@@ -113,6 +121,7 @@ __interrupt void Port_1(void)   //take care of interrupt coming from port 1
 
     P1OUT ^= LED1;                      //toggle LED1
     P1IFG &= ~BUTTON;                   // clear the P1.3 interrupt flag
+    TA0CCR0 = 100;                      //tell debouncing timer when to trigger interrupt
     TA0CTL = TASSEL_2 + MC_1 + ID_3 + TAIE;     // SMCLK, up mode, input divider = 8
     P1IE &= BUTTON;                     //disable port 1 interrupts (button won't cause interrupt)
 
@@ -121,90 +130,67 @@ __interrupt void Port_1(void)   //take care of interrupt coming from port 1
     {
     case 0:
     {
-        TACTL = TACLR;  //clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 = 0;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
+
     }
         break;
     case 10:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
         TA1CCR1 += 26;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 20:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 26;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 30:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 27;  //since we should technically increment by 26.2, I use 27 here to account for lost decimal place
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 40:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 26;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 50:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 26;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 60:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 26;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 70:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 26;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;;
     case 80:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
         TA1CCR1 += 27;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 90:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 26;//increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     case 100:
     {
-        TACTL = TACLR;//clear timer
-        TA0CCTL1 = OUTMOD_7;
+
         TA1CCR1 += 26;  //increment CCR1 (increase duty cycle by 10%)
-        TA1CTL = TASSEL_2 + MC_1 + ID_2 + TAIE; //TA1 initialized with interrupt enabled
     }
         break;
     }
